@@ -12,7 +12,7 @@ import telran.students.service.interfaces.*;
 public class StudentsRestController {
 	@Autowired
 	StudentsService studentsService;
-	@
+	@GetMapping("/subject/mark")
 public List<StudentSubjectMark> getStudentSubjectMark(String name, String subject) {
 	return studentsService.getMarksStudentSubject(name, subject);
 }

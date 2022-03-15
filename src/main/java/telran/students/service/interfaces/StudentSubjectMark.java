@@ -1,8 +1,8 @@
 package telran.students.service.interfaces;
 
 public interface StudentSubjectMark {
-String getName();
-String getSubject();
+String getStudentName();
+String getSubjectSubject();
 int getMark();
 
 }

@@ -1,4 +1,5 @@
 spring:
+ 
   datasource:
     driver-class-name: org.postgresql.Driver
     password: 12345.com
@@ -10,3 +11,5 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQL9Dialect
+server:
+   port: 8080       

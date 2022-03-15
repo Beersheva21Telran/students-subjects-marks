@@ -58,7 +58,7 @@ MarksRepository marksRepository;
 	@Override
 	public List<StudentSubjectMark> getMarksStudentSubject(String name, String subject) {
 		
-		return ;
+		return marksRepository.findByStudentNameAndSubjectSubject(name, subject);
 	}
 
 	@Override
