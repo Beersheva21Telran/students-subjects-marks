@@ -1,7 +1,12 @@
 package telran.students.service.impl;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +25,8 @@ public class StudentsServiceJpa implements StudentsService{
 StudentsRepository studentsRepository;
 SubjectsRepository subjectsRepository;
 MarksRepository marksRepository;
+@PersistenceContext
+EntityManager em;
 @Autowired
 	public StudentsServiceJpa(StudentsRepository studentsRepository, SubjectsRepository subjectsRepository,
 		MarksRepository marksRepository) {
@@ -63,14 +70,14 @@ MarksRepository marksRepository;
 
 	@Override
 	public List<String> getBestStudents() {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return marksRepository.findBestStudents();
 	}
 
 	@Override
 	public List<String> getTopBestStudents(int nStudents) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return marksRepository.findTopBestStudents(nStudents);
 	}
 
 	@Override
@@ -87,6 +94,33 @@ MarksRepository marksRepository;
 
 	@Override
 	public List<IntervalMarks> marksDistibution(int interval) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<String> jpqlQuery(String jpql) {
+		Query query = em.createQuery(jpql);
+		List result = query.getResultList();
+		if (result.isEmpty()) {
+			return Collections.EMPTY_LIST;
+		}
+		return result.get(0).getClass().isArray() ? multiProjectionRequest(result) :
+			simpleRequest(result);
+	}
+
+	private List<String> multiProjectionRequest(List<Object[]> result) {
+		
+		return  result.stream().map(Arrays::deepToString).toList();
+	}
+
+	private List<String> simpleRequest(List<Object> result) {
+		
+		return result.stream().map(Object::toString).toList();
+	}
+
+	@Override
+	public List<String> sqlQuery(String sql) {
 		// TODO Auto-generated method stub
 		return null;
 	}

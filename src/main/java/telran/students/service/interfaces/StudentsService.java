@@ -14,4 +14,6 @@ List<String> getTopBestStudents(int nStudents); //returns names of nStudents bes
 List <Student> getTopBestStudentsSubject(int nStudents, String subject); 
 List<StudentSubjectMark> getMarksOfWorstStudents(int nStudents); //returns data about marks for nStudents worst student
 List<IntervalMarks> marksDistibution(int interval);
+List<String> jpqlQuery(String jpql);
+List<String> sqlQuery(String sql);
 }
