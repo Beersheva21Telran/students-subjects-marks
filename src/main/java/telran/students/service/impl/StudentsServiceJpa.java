@@ -57,8 +57,8 @@ MarksRepository marksRepository;
 
 	@Override
 	public List<StudentSubjectMark> getMarksStudentSubject(String name, String subject) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return ;
 	}
 
 	@Override
