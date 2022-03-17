@@ -82,25 +82,30 @@ EntityManager em;
 
 	@Override
 	public List<Student> getTopBestStudentsSubject(int nStudents, String subject) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return studentsRepository.findTopBestStudentsSubject(nStudents, subject)
+				.stream().map(StudentJpa::getStudentDto).toList();
 	}
 
 	@Override
 	public List<StudentSubjectMark> getMarksOfWorstStudents(int nStudents) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return marksRepository.findMarksOfWorstStudents(nStudents);
 	}
 
 	@Override
 	public List<IntervalMarks> marksDistibution(int interval) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		return marksRepository.findMarksDistribution(interval);
 	}
 
 	@Override
 	public List<String> jpqlQuery(String jpql) {
 		Query query = em.createQuery(jpql);
+		return getResult(query);
+	}
+
+	private List<String> getResult(Query query) {
 		List result = query.getResultList();
 		if (result.isEmpty()) {
 			return Collections.EMPTY_LIST;
@@ -121,8 +126,8 @@ EntityManager em;
 
 	@Override
 	public List<String> sqlQuery(String sql) {
-		// TODO Auto-generated method stub
-		return null;
+		Query query = em.createNativeQuery(sql);
+		return getResult(query);
 	}
 
 }
