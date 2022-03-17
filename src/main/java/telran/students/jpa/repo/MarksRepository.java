@@ -31,9 +31,9 @@ List<String> findTopBestStudents(@Param("nStudents") int nStudents);
 		nativeQuery=true)
 List<StudentSubjectMark> findMarksOfWorstStudents(@Param("nStudents") int nStudents);
 
-@Query(value="select m.mark/:interval * :interval as min,"
-		+ " :interval * (m.mark/:interval + 1) - 1 as max, count(*) as occurrences from "
-		+ " marks m group by min,  max order by min", nativeQuery=true)
+@Query(value="select mark/:interval * :interval as min,"
+		+ " :interval * (mark/:interval + 1) - 1 as max, count(*) as occurrences from "
+		+ " marks  group by min,  max order by min", nativeQuery=true)
 List<IntervalMarks> findMarksDistribution(int interval);
 
 
