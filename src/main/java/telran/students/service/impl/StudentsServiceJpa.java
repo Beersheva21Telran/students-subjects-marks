@@ -133,9 +133,12 @@ EntityManager em;
 
 	@Override
 	@Transactional
-	public int removeStudents(int avgMark, int nMarks) {
-		
-		return studentsRepository.deleteStudents(avgMark, nMarks);
+	public List<Student> removeStudents(int avgMark, int nMarks) {
+		List<StudentJpa> listJpa =
+				studentsRepository.findStudentsForDeletion(avgMark, nMarks);
+		listJpa.forEach(studentsRepository::delete);
+		//studentsRepository.deleteStudents(avgMark, nMarks);
+		return listJpa.stream().map(StudentJpa::getStudentDto).toList();
 	}
 
 }

@@ -3,6 +3,9 @@ import java.util.List;
 
 import javax.persistence.*;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import telran.students.dto.Student;
 @Entity
 @Table(name = "students")
@@ -11,7 +14,8 @@ public class StudentJpa {
 	int stid;
 @Column(nullable = false, unique = true)
 String name;
-@OneToMany(mappedBy = "student",cascade = CascadeType.REMOVE)
+@OneToMany(mappedBy = "student", cascade = CascadeType.REMOVE)
+//@OnDelete(action = OnDeleteAction.CASCADE) //adding the cascade deletion constraint to DB
 List<MarkJpa> marks;
 public static StudentJpa build(Student student) {
 	StudentJpa res = new StudentJpa();

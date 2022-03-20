@@ -22,4 +22,10 @@ public interface StudentsRepository extends JpaRepository<StudentJpa, Integer> {
 			+ " in (select student.stid from MarkJpa group by student.stid"
 			+ " having avg(mark) < :avgMark and count(*) < :nMarks)")
 	int deleteStudents(@Param("avgMark") double avgMark, @Param("nMarks") long nMarks);
+	
+	@Query(value = "select s from StudentJpa s where stid"
+			+ " in (select student.stid from MarkJpa group by student.stid"
+			+ " having avg(mark) < :avgMark and count(*) < :nMarks)")
+	List<StudentJpa> findStudentsForDeletion
+	(@Param("avgMark") double avgMark, @Param("nMarks") long nMarks);
 }

@@ -46,7 +46,7 @@ public List<StudentSubjectMark> getStudentSubjectMark(String name, String subjec
 			studentsService.nativeQuery(queryDto.query);
 	}
 	@DeleteMapping("/delete")
-	public int deleteStudents(@RequestParam("avgMark") int avgMark,
+	public List<Student>deleteStudents(@RequestParam("avgMark") int avgMark,
 			@RequestParam ("nMarks")int nMarks) {
 		return studentsService.removeStudents(avgMark, nMarks);
 	}

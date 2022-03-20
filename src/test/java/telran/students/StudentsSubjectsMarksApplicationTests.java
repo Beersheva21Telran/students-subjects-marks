@@ -2,6 +2,8 @@ package telran.students;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.UnsupportedEncodingException;
+
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -15,17 +17,21 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import telran.students.dto.Mark;
 import telran.students.dto.Student;
 import telran.students.dto.Subject;
+import telran.students.service.interfaces.StudentSubjectMark;
 import telran.students.service.interfaces.StudentsService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(connection = EmbeddedDatabaseConnection.H2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+
 class StudentsSubjectsMarksApplicationTests {
 	ObjectMapper mapper = new ObjectMapper();
 	@Autowired
@@ -40,19 +46,11 @@ class StudentsSubjectsMarksApplicationTests {
 	@Test
 	@Order(1)
 	void dbLoad() {
-//		insert into students (stid, name) VALUES (1, 'Moshe');
-//		insert into students (stid, name) VALUES (2, 'Sara');
-//		insert into students (stid, name) VALUES (3, 'Vasya');
-//		insert into subjects (suid, subject) VALUES (1,'React');
-//		insert into subjects (suid, subject) VALUES (2, 'Java');
-//		insert into marks (id, mark, student_stid, subject_suid) VALUES (1, 90, 1, 1);
-//		insert into marks (id, mark, student_stid, subject_suid) VALUES (2, 90, 1, 2);
-//		insert into marks (id, mark, student_stid, subject_suid) VALUES (3, 80, 2, 1);
-//		insert into marks (id, mark, student_stid, subject_suid) VALUES (4, 80, 2, 2);
-//		insert into marks (id, mark, student_stid, subject_suid) VALUES (5, 40, 3, 2);
+
 		studentsService.addStudent(new Student(1, "Moshe"));
 		studentsService.addStudent(new Student(2, "Sara"));
 		studentsService.addStudent(new Student(3, "Vasya"));
+		studentsService.addStudent(new Student(4, "Olya"));
 		studentsService.addSubject(new Subject(1, "React"));
 		studentsService.addSubject(new Subject(2, "Java"));
 		studentsService.addMark(new Mark(1, 1, 90));
@@ -60,8 +58,48 @@ class StudentsSubjectsMarksApplicationTests {
 		studentsService.addMark(new Mark(2, 1, 80));
 		studentsService.addMark(new Mark(2, 2, 80));
 		studentsService.addMark(new Mark(3, 2, 40));
+		studentsService.addMark(new Mark(4, 2, 45));
 		
 		
+	}
+	@Test
+	@Order(99)
+	void worstMarks() throws  Exception {
+		String subject = "Java";
+		String name = "Vasya";
+		int mark = 40;
+		testForWorstMarks(subject, name, mark);
+	
+		
+	}
+	@Test
+	@Order(100)
+	void deleteStudents() throws Exception {
+		String resJSON = mockMvc.perform(MockMvcRequestBuilders
+				.delete("/students/delete?avgMark=45&nMarks=2")).andReturn()
+				.getResponse().getContentAsString();
+		Student [] students = mapper.readValue(resJSON,
+				Student [].class);
+		Student[] expected = {new Student(3, "Vasya")};
+		assertArrayEquals(expected, students);
+		
+		
+	}
+	private void testForWorstMarks(String subject, String name, int mark)
+			throws UnsupportedEncodingException, Exception, JsonProcessingException, JsonMappingException {
+		String resJSON = mockMvc.perform(MockMvcRequestBuilders
+				.get("/students/worst/marks?amount=1")).andReturn()
+				.getResponse().getContentAsString();
+		StSuM [] subjectMarks = mapper.readValue(resJSON,
+				StSuM [].class);
+		
+		testWorstMarks(subjectMarks, subject, name, mark);
+	}
+	private void testWorstMarks(StSuM[] subjectMarks, String subject, String name, int mark) {
+		assertEquals(1, subjectMarks.length);
+		assertEquals(subject, subjectMarks[0].subjectSubject);
+		assertEquals(name, subjectMarks[0].studentName);
+		assertEquals(mark, subjectMarks[0].mark );
 	}
 
 	@Test
@@ -87,4 +125,9 @@ class StudentsSubjectsMarksApplicationTests {
 
 	}
 
+}
+class StSuM {
+	public String subjectSubject;
+	public String studentName;
+	public int mark;
 }

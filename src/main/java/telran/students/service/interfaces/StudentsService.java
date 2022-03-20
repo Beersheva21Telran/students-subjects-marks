@@ -16,5 +16,5 @@ List<StudentSubjectMark> getMarksOfWorstStudents(int nStudents); //returns data 
 List<IntervalMarks> marksDistibution(int interval);
 List<String> jpqlQuery(String jpql);
 List<String> nativeQuery(String query);
-int removeStudents(int avgMark, int nMarks);
+List<Student> removeStudents(int avgMark, int nMarks);
 }
