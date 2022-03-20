@@ -7,10 +7,11 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
-import javax.transaction.Transactional;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import telran.students.dto.Mark;
 import telran.students.dto.Student;
@@ -125,9 +126,16 @@ EntityManager em;
 	}
 
 	@Override
-	public List<String> sqlQuery(String sql) {
+	public List<String> nativeQuery(String sql) {
 		Query query = em.createNativeQuery(sql);
 		return getResult(query);
+	}
+
+	@Override
+	@Transactional
+	public int removeStudents(int avgMark, int nMarks) {
+		
+		return studentsRepository.deleteStudents(avgMark, nMarks);
 	}
 
 }

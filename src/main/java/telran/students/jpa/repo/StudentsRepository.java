@@ -3,6 +3,7 @@ package telran.students.jpa.repo;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,4 +16,10 @@ public interface StudentsRepository extends JpaRepository<StudentJpa, Integer> {
 			+ "group by stid, name order by avg(mark) desc limit :nStudents", nativeQuery=true)
 	List<StudentJpa> findTopBestStudentsSubject(@Param("nStudents") int nStudents,
 			@Param("subject") String subject);
+
+	@Modifying
+	@Query(value = "delete from StudentJpa where stid"
+			+ " in (select student.stid from MarkJpa group by student.stid"
+			+ " having avg(mark) < :avgMark and count(*) < :nMarks)")
+	int deleteStudents(@Param("avgMark") double avgMark, @Param("nMarks") long nMarks);
 }

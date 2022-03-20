@@ -43,7 +43,12 @@ public List<StudentSubjectMark> getStudentSubjectMark(String name, String subjec
 	@PostMapping("/query")
 	public List<String> getQueryResult(@RequestBody QueryDto queryDto) {
 		return queryDto.type == QueryType.JPQL ? studentsService.jpqlQuery(queryDto.query) :
-			studentsService.sqlQuery(queryDto.query);
+			studentsService.nativeQuery(queryDto.query);
+	}
+	@DeleteMapping("/delete")
+	public int deleteStudents(@RequestParam("avgMark") int avgMark,
+			@RequestParam ("nMarks")int nMarks) {
+		return studentsService.removeStudents(avgMark, nMarks);
 	}
 	
 }

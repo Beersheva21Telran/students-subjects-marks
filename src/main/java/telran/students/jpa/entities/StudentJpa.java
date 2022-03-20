@@ -1,4 +1,6 @@
 package telran.students.jpa.entities;
+import java.util.List;
+
 import javax.persistence.*;
 
 import telran.students.dto.Student;
@@ -9,6 +11,8 @@ public class StudentJpa {
 	int stid;
 @Column(nullable = false, unique = true)
 String name;
+@OneToMany(mappedBy = "student",cascade = CascadeType.REMOVE)
+List<MarkJpa> marks;
 public static StudentJpa build(Student student) {
 	StudentJpa res = new StudentJpa();
 	res.name = student.name;
