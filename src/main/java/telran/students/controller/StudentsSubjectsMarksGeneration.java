@@ -16,7 +16,7 @@ import telran.students.dto.Student;
 import telran.students.dto.Subject;
 import telran.students.service.interfaces.StudentsService;
 
-//@Component
+@Component
 public class StudentsSubjectsMarksGeneration {
 	static Logger LOG = LoggerFactory.getLogger("generation");
 	@Value("${app.generation.amount: 100}")
