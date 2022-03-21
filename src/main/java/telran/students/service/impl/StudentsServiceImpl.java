@@ -1,8 +1,20 @@
 package telran.students.service.impl;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.bson.Document;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.GroupOperation;
+import org.springframework.data.mongodb.core.aggregation.LimitOperation;
+import org.springframework.data.mongodb.core.aggregation.SortOperation;
+import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.stereotype.Service;
 
 import telran.students.dto.Mark;
@@ -55,8 +67,33 @@ MongoTemplate mongoTemplate;
 
 	@Override
 	public List<StudentSubjectMark> getMarksStudentSubject(String name, String subject) {
-		// TODO Auto-generated method stub
-		return null;
+		StudentDoc student =studentsRepository.findByName(name);
+		if(student == null) {
+			return Collections.emptyList();
+		}
+		
+		return student.getMarks().stream()
+				.filter(sm -> sm.getSubject().equals(subject))
+				.map(sm -> getStudentSubjectMark(sm, name)).toList();
+	}
+	private StudentSubjectMark getStudentSubjectMark(SubjectMark sm, String name) {
+		return new StudentSubjectMark() {
+			
+			@Override
+			public String getSubjectSubject() {
+				return sm.getSubject();
+			}
+			
+			@Override
+			public String getStudentName() {
+				return name;
+			}
+			
+			@Override
+			public int getMark() {
+				return sm.getMark();
+			}
+		};
 	}
 
 	@Override
@@ -67,8 +104,22 @@ MongoTemplate mongoTemplate;
 
 	@Override
 	public List<String> getTopBestStudents(int nStudents) {
-		// TODO Auto-generated method stub
-		return null;
+		List<AggregationOperation> listOperations = getStudentAvgMark();
+		LimitOperation limit = Aggregation.limit(nStudents);
+		listOperations.add(limit);
+		List<Document> documentsRes =
+				mongoTemplate.aggregate(Aggregation.newAggregation(listOperations), StudentDoc.class, Document.class)
+				.getMappedResults();
+		
+		return documentsRes.stream().map(doc -> doc.getString("_id") + "," +
+		doc.getDouble("avgMark").intValue()).toList();
+	}
+
+	private List<AggregationOperation> getStudentAvgMark() {
+		UnwindOperation unwindOperation = Aggregation.unwind("marks");
+		GroupOperation groupOperation = Aggregation.group("name").avg("marks.mark").as("avgMark");
+		SortOperation sortOperation = Aggregation.sort(Direction.ASC, "avgMark");
+		return new ArrayList<>(Arrays.asList(unwindOperation, groupOperation, sortOperation));
 	}
 
 	@Override
@@ -96,9 +147,18 @@ MongoTemplate mongoTemplate;
 	}
 
 	@Override
-	public List<String> nativeQuery(String query) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<String> nativeQuery(String queryJson) {
+		List<StudentDoc> res;
+		try {
+			BasicQuery query = new BasicQuery(queryJson);
+			res = mongoTemplate.find(query, StudentDoc.class);
+			return res.stream().map(StudentDoc::toString).toList();
+		} catch (Exception e) {
+			ArrayList<String> errorMessage = new ArrayList<>();
+			errorMessage.add(e.getMessage());
+			return errorMessage;
+		}
+		
 	}
 
 	@Override

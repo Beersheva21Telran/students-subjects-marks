@@ -6,4 +6,6 @@ import telran.students.entities.StudentDoc;
 
 public interface StudentsRepository extends MongoRepository<StudentDoc, Integer> {
 
+	StudentDoc findByName(String name);
+
 }

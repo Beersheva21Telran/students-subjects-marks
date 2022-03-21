@@ -16,6 +16,10 @@ public class SubjectMark {
 	public String getSubject() {
 		return subject;
 	}
+	@Override
+	public String toString() {
+		return "SubjectMark [subject=" + subject + ", mark=" + mark + "]";
+	}
 	
 	
 }
