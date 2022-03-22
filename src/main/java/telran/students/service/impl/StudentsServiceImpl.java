@@ -12,9 +12,11 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.LimitOperation;
+import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.aggregation.SortOperation;
 import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import telran.students.dto.Mark;
@@ -98,28 +100,48 @@ MongoTemplate mongoTemplate;
 
 	@Override
 	public List<String> getBestStudents() {
-		// TODO Auto-generated method stub
-		return null;
+		List<AggregationOperation> listOperations = getStudentAvgMark(Direction.DESC);
+		double avgCollegeMark = getAvgCollegeMark();
+		MatchOperation matchOperation = Aggregation.match(Criteria.where("avgMark").gt(avgCollegeMark));
+		listOperations.add(matchOperation);
+		return resultProcessing(listOperations);
 	}
 
 	@Override
 	public List<String> getTopBestStudents(int nStudents) {
-		List<AggregationOperation> listOperations = getStudentAvgMark();
+		List<AggregationOperation> listOperations = getStudentAvgMark(Direction.DESC);
 		LimitOperation limit = Aggregation.limit(nStudents);
 		listOperations.add(limit);
-		List<Document> documentsRes =
-				mongoTemplate.aggregate(Aggregation.newAggregation(listOperations), StudentDoc.class, Document.class)
-				.getMappedResults();
-		
-		return documentsRes.stream().map(doc -> doc.getString("_id") + "," +
-		doc.getDouble("avgMark").intValue()).toList();
+		return resultProcessing(listOperations);
 	}
 
-	private List<AggregationOperation> getStudentAvgMark() {
+	private List<String> resultProcessing(List<AggregationOperation> listOperations) {
+		try {
+			List<Document> documentsRes =
+					mongoTemplate.aggregate(Aggregation.newAggregation(listOperations), StudentDoc.class, Document.class)
+					.getMappedResults();
+			
+			return documentsRes.stream().map(doc -> doc.getString("_id") + "," +
+			doc.getDouble("avgMark").intValue()).toList();
+		} catch (Exception e) {
+			ArrayList<String> errorMessage = new ArrayList<>();
+			errorMessage.add(e.getMessage());
+			return errorMessage;
+		}
+	}
+
+	private List<AggregationOperation> getStudentAvgMark(Direction sortDirection) {
 		UnwindOperation unwindOperation = Aggregation.unwind("marks");
 		GroupOperation groupOperation = Aggregation.group("name").avg("marks.mark").as("avgMark");
-		SortOperation sortOperation = Aggregation.sort(Direction.ASC, "avgMark");
+		SortOperation sortOperation = Aggregation.sort(sortDirection, "avgMark");
 		return new ArrayList<>(Arrays.asList(unwindOperation, groupOperation, sortOperation));
+	}
+	private double getAvgCollegeMark() {
+		UnwindOperation unwindOperation = Aggregation.unwind("marks");
+		GroupOperation groupOperation = Aggregation.group().avg("marks.mark").as("avgMark");
+		Aggregation pipeline = Aggregation.newAggregation(unwindOperation,groupOperation);
+		return mongoTemplate.aggregate(pipeline, StudentDoc.class, Document.class)
+				.getUniqueMappedResult().getDouble("avgMark");
 	}
 
 	@Override
