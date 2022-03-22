@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.bson.Document;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.BucketAutoOperation;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.LimitOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
@@ -18,6 +20,7 @@ import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import telran.students.dto.Mark;
 import telran.students.dto.Student;
@@ -29,6 +32,8 @@ import telran.students.repo.*;
 import telran.students.service.interfaces.*;
 @Service
 public class StudentsServiceImpl implements StudentsService{
+private static final int MAX_MARK = 100;
+private static final int MIN_MARK = 60;
 StudentsRepository studentsRepository;
 SubjectsRepository subjectsRepository;
 MongoTemplate mongoTemplate;
@@ -74,13 +79,16 @@ MongoTemplate mongoTemplate;
 			return Collections.emptyList();
 		}
 		
+		return getStudentStream(name, subject, student).toList();
+	}
+
+	private Stream<StudentSubjectMark> getStudentStream(String name, String subject, StudentDoc student) {
 		return student.getMarks().stream()
 				.filter(sm -> sm.getSubject().equals(subject))
-				.map(sm -> getStudentSubjectMark(sm, name)).toList();
+				.map(sm -> getStudentSubjectMark(sm, name));
 	}
 	private StudentSubjectMark getStudentSubjectMark(SubjectMark sm, String name) {
 		return new StudentSubjectMark() {
-			
 			@Override
 			public String getSubjectSubject() {
 				return sm.getSubject();
@@ -90,7 +98,6 @@ MongoTemplate mongoTemplate;
 			public String getStudentName() {
 				return name;
 			}
-			
 			@Override
 			public int getMark() {
 				return sm.getMark();
@@ -104,7 +111,7 @@ MongoTemplate mongoTemplate;
 		double avgCollegeMark = getAvgCollegeMark();
 		MatchOperation matchOperation = Aggregation.match(Criteria.where("avgMark").gt(avgCollegeMark));
 		listOperations.add(matchOperation);
-		return resultProcessing(listOperations);
+		return resultProcessing(listOperations, true);
 	}
 
 	@Override
@@ -112,17 +119,19 @@ MongoTemplate mongoTemplate;
 		List<AggregationOperation> listOperations = getStudentAvgMark(Direction.DESC);
 		LimitOperation limit = Aggregation.limit(nStudents);
 		listOperations.add(limit);
-		return resultProcessing(listOperations);
+		return resultProcessing(listOperations, true);
 	}
 
-	private List<String> resultProcessing(List<AggregationOperation> listOperations) {
+	private List<String> resultProcessing(List<AggregationOperation> listOperations, boolean mark) {
 		try {
 			List<Document> documentsRes =
 					mongoTemplate.aggregate(Aggregation.newAggregation(listOperations), StudentDoc.class, Document.class)
 					.getMappedResults();
 			
-			return documentsRes.stream().map(doc -> doc.getString("_id") + "," +
-			doc.getDouble("avgMark").intValue()).toList();
+			return documentsRes.stream().map(doc -> doc.getString("_id") + (mark ? "," +
+					doc.getDouble("avgMark").intValue() : "")).toList();
+
+
 		} catch (Exception e) {
 			ArrayList<String> errorMessage = new ArrayList<>();
 			errorMessage.add(e.getMessage());
@@ -146,26 +155,65 @@ MongoTemplate mongoTemplate;
 
 	@Override
 	public List<Student> getTopBestStudentsSubject(int nStudents, String subject) {
-		// TODO Auto-generated method stub
-		return null;
+		UnwindOperation unwindOperation = Aggregation.unwind("marks");
+		MatchOperation subjectMatchOperation = Aggregation.match(Criteria.where("marks.subject")
+				.is(subject));
+		GroupOperation groupOperation = Aggregation.group("stid","name").avg("marks.mark").as("avgMark");
+		SortOperation sortOperation = Aggregation.sort(Direction.DESC, "avgMark");
+		LimitOperation limitOperation = Aggregation.limit(nStudents);
+		List<Document> documents = mongoTemplate.aggregate
+				(Aggregation.newAggregation(unwindOperation,
+						subjectMatchOperation, groupOperation, sortOperation, limitOperation),
+						StudentDoc.class, Document.class).getMappedResults();
+		return documents.stream().map(this::getStudent).toList();
 	}
-
+private Student getStudent(Document doc) {
+	Document groupId = (Document) doc.get("_id");
+	return new Student(groupId.getInteger("stid"), groupId.getString("name"));
+}
 	@Override
 	public List<StudentSubjectMark> getMarksOfWorstStudents(int nStudents) {
-		// TODO Auto-generated method stub
-		return null;
+		List<AggregationOperation> listOperations = getStudentAvgMark(Direction.ASC);
+		AggregationOperation limitOperation = Aggregation.limit(nStudents);
+		listOperations.add(limitOperation);
+		 List<String> names = resultProcessing(listOperations, false);
+		 List<StudentDoc> students = studentsRepository.findByNameIn(names);
+		 return students.stream().flatMap(s -> s.getMarks().stream()
+					.map(sm -> getStudentSubjectMark(sm, s.getName()))).toList();
+		 
 	}
 
 	@Override
 	public List<IntervalMarks> marksDistibution(int interval) {
-		// TODO Auto-generated method stub
-		return null;
+		int nIntervals = ( MAX_MARK - MIN_MARK) / interval;
+		UnwindOperation unwindOperation = Aggregation.unwind("marks");
+		BucketAutoOperation bucketOperation = Aggregation.bucketAuto("marks.mark", nIntervals);
+		List<Document> bucketDocs =
+				mongoTemplate.aggregate(Aggregation.newAggregation(unwindOperation,
+						bucketOperation), StudentDoc.class, Document.class).getMappedResults();
+		return bucketDocs.stream()
+				.map(this::getIntervalMarks ).toList();
 	}
-
+private IntervalMarks getIntervalMarks(Document doc) {
+	Document interval = (Document) doc.get("_id");
+	return new IntervalMarks() {
+		public int getOccurrences() {
+			return doc.getInteger("count");
+		}
+		public int getMin() {
+			return interval.getInteger("min");
+		}
+		public int getMax() {
+			return interval.getInteger("max");
+		}
+	
+};
+}
 	@Override
 	public List<String> jpqlQuery(String jpql) {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<String> res = new ArrayList<>();
+		res.add("JPQL is not supported ");
+		return res;
 	}
 
 	@Override
@@ -184,9 +232,25 @@ MongoTemplate mongoTemplate;
 	}
 
 	@Override
+	@Transactional
 	public List<Student> removeStudents(int avgMark, int nMarks) {
-		// TODO Auto-generated method stub
-		return null;
+		UnwindOperation unwindOperation = Aggregation.unwind("marks");
+		
+		GroupOperation groupOperation = Aggregation.group("stid","name")
+				.avg("marks.mark").as("avgMark").count().as("count");
+		
+		MatchOperation matchOperation =
+				Aggregation.match(Criteria.where("avgMark")
+						.lt((double)avgMark).and("count").lt((long)nMarks));
+		List<Document> documents = mongoTemplate.aggregate
+				(Aggregation.newAggregation(unwindOperation,
+						 groupOperation, matchOperation),
+						StudentDoc.class, Document.class).getMappedResults();
+		List<Student> studentsForRemoving =
+				documents.stream().map(this::getStudent).toList();
+		studentsRepository.deleteAllById(studentsForRemoving.stream().map(s->s.stid).toList());
+				
+		return studentsForRemoving;
 	}
 
 }
