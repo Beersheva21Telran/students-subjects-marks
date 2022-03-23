@@ -33,7 +33,8 @@ import telran.students.service.interfaces.StudentsService;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@TestPropertySource(properties = "spring.mongodb.embedded.version=4.0.2")
+@TestPropertySource(properties = {"spring.mongodb.embedded.version=4.0.2",
+		"app.generation.create=false"})
 class StudentsSubjectsMarksApplicationTests {
 	ObjectMapper mapper = new ObjectMapper();
 	@Autowired
