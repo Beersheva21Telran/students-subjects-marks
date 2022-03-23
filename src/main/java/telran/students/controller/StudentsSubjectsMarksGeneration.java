@@ -16,9 +16,11 @@ import telran.students.dto.Student;
 import telran.students.dto.Subject;
 import telran.students.service.interfaces.StudentsService;
 
-//@Component
+@Component
 public class StudentsSubjectsMarksGeneration {
 	static Logger LOG = LoggerFactory.getLogger("generation");
+	@Value("${app.generation.create: false}")
+	boolean needCreateDB;
 	@Value("${app.generation.amount: 100}")
 	int nMarks;
 	@Autowired
@@ -30,10 +32,12 @@ public class StudentsSubjectsMarksGeneration {
 
 	@PostConstruct
 	void createDB() {
-		addStudents();
-		addSubjects();
-		addMarks();
-		LOG.info("created {} random marks in DB", nMarks);
+		if (needCreateDB) {
+			addStudents();
+			addSubjects();
+			addMarks();
+			LOG.info("created {} random marks in DB", nMarks);
+		}
 	}
 	private int getRandomNumber(int min, int max) {
 		return ThreadLocalRandom.current().nextInt(min, max + 1);

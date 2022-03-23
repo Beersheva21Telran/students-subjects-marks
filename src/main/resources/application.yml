@@ -2,14 +2,18 @@ spring:
  
   datasource:
     driver-class-name: org.postgresql.Driver
-    password: 12345.com
-    url: jdbc:postgresql://localhost:5432/students
-    username: postgres
+    password: ${POSTGRES_PASSWORD}
+    
+    username: mhuovflegpdjeo
+    url: jdbc:postgresql://ec2-63-32-248-14.eu-west-1.compute.amazonaws.com:5432/d65sr9kvj2rpev
+    
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQL9Dialect
-server:
-   port: 8080       
+
+app:
+  generation:
+     create: false   
