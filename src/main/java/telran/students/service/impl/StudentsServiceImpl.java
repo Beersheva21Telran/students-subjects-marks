@@ -53,7 +53,7 @@ MongoTemplate mongoTemplate;
 
 	@Override
 	public void addSubject(Subject subject) {
-		subjectsRepository.insert(new SubjectDoc(subject.suid, subject.subject));
+		subjectsRepository.save(new SubjectDoc(subject.suid, subject.subject));
 		
 	}
 
